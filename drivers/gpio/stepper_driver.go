@@ -18,6 +18,7 @@ var StepperModes = struct {
 	SinglePhaseStepping [][4]byte
 	DualPhaseStepping   [][4]byte
 	HalfStepping        [][4]byte
+	Idle                [4]byte
 }{
 	//1 cycle = 4 steps with lesser torque
 	SinglePhaseStepping: [][4]byte{
@@ -44,6 +45,7 @@ var StepperModes = struct {
 		{0, 0, 1, 1},
 		{0, 0, 0, 1},
 	},
+	Idle: [4]byte{0, 0, 0, 0},
 }
 
 // StepperDriver object
@@ -136,6 +138,22 @@ func (s *StepperDriver) Halt() (err error) {
 	s.mutex.Lock()
 	s.moving = false
 	s.mutex.Unlock()
+	return nil
+}
+
+// Idle halts the motion of the Stepper and idles the outputs to prevent overheating
+func (s *StepperDriver) Idle() (err error) {
+	err = s.Halt()
+	if err != nil {
+		return err
+	}
+
+	for i, v := range StepperModes.Idle {
+		err := s.connection.DigitalWrite(s.pins[i], v)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
